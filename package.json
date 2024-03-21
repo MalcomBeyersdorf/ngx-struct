@@ -1,0 +1,31 @@
+{
+  "name": "ngx-struct",
+  "version": "1.0.0",
+  "description": "A CLI tool for quickly scaffolding Angular project structures, including components, services, and stores.",
+  "main": "index.js",
+  "bin": {
+    "ngx-struct": "./src/index.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "angular",
+    "scaffold",
+    "cli",
+    "component",
+    "service",
+    "store"
+  ],
+  "author": "Malcom Beyersdorf <malcomgbugd@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MalcomBeyersdorf/ngx-struct.git"
+  },
+  "bugs": {
+    "url": "https://github.com/MalcomBeyersdorf/ngx-struct/issues"
+  },
+  "homepage": "https://github.com/MalcomBeyersdorf/ngx-struct#readme"
+}
+
