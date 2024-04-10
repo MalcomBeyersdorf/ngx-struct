@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-
 const fs = require("fs");
 const path = require("path");
 const readline = require("readline");
@@ -58,8 +57,8 @@ function createComponentFiles(basePath, name) {
 
     @Component({
       selector: 'app-${name.toLowerCase()}',
+      standalone: true,
       template: \`${componentTemplate}\`,
-      styleUrls: ['./${name.toLowerCase()}.component.scss']
     })
     export class ${componentName} {}
   `;
@@ -67,14 +66,6 @@ function createComponentFiles(basePath, name) {
   fs.writeFileSync(
     path.join(basePath, "feature", `${name.toLowerCase()}.component.ts`),
     componentContent,
-  );
-  fs.writeFileSync(
-    path.join(basePath, "feature", `${name.toLowerCase()}.component.html`),
-    componentTemplate,
-  );
-  fs.writeFileSync(
-    path.join(basePath, "feature", `${name.toLowerCase()}.component.scss`),
-    "",
   );
 }
 
