@@ -91,9 +91,9 @@ src/app/dashboard/
 │   └── dashboard.store.ts 
 ├── ui/ 
 └── feature/     
-├── dashboard.component.ts     
-├── dashboard.component.html     
-└── dashboard.component.scss
+    ├── dashboard.component.ts     
+    ├── dashboard.component.html     
+    └── dashboard.component.scss
 ```
 
 For a nested feature scenario, where `dashboard` contains a nested feature named `reports`:
