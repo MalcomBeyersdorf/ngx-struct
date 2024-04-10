@@ -187,6 +187,7 @@ export class SomeService {
       }
     });
   }
+}
 ```
 
 ```angular2html
@@ -211,6 +212,7 @@ export class SomeStore {
   saveLocalData(data: data[]): void {
     this.storage.setItem('data', JSON.stringify(data));
   }
+}
 ```
 
 >With this approach we make sure that all the logic is in the same file and we expose actions that allow us to modify the state indirectly, also exposing only the necessary information and not the entire state.
