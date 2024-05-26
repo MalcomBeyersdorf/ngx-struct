@@ -19,22 +19,22 @@ function createDirectories(basePath, folders) {
 
 function createServiceAndStoreFiles(basePath, name) {
   createDirectories(basePath, ["data"]);
-  const serviceNameUpperCase = `${name.charAt(0).toUpperCase() + name.slice(1)}Service`;
-  const storeNameUpperCase = `${name.charAt(0).toUpperCase() + name.slice(1)}Store`;
-  const storeNameLowerCase = `${name.charAt(0) + name.slice(1)}Store`;
 
   const serviceContent = `
     // Import statements etc.
-    import { retry, startWith, Subject, switchMap } from 'rxjs';
+    import { retry, startWith, Subject, switchMap, of } from 'rxjs';
     import { computed, effect, inject, Injectable, signal } from '@angular/core';
     import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+    import { ${toPascalCase(name)}Store} from './${toKebabCase(name)}.store';
     
     @Injectable({
       providedIn: 'root',
     })
-    export class ${serviceNameUpperCase} {
+    export class ${toPascalCase(name)}Service {
         //private readonly apiService: ApiService = inject(ApiService);
-        private readonly ${storeNameLowerCase}: ${storeNameUpperCase} = inject(${storeNameUpperCase});
+        private readonly ${toCamelCase(name)}Store: ${toPascalCase(
+          name,
+        )}Store = inject(${toPascalCase(name)}Store);
         
         private state = signal<any>({
           data: [],
@@ -50,7 +50,7 @@ function createServiceAndStoreFiles(basePath, name) {
         private dataLoaded$ = this.retry$.pipe(
           startWith(null),
           switchMap(() =>
-            console.log('api request');
+            of(console.log('api request'))
             /*
             this.apiService.get().pipe(
               retry({
@@ -67,7 +67,7 @@ function createServiceAndStoreFiles(basePath, name) {
         
         constructor() {
           this.dataLoaded$.pipe(takeUntilDestroyed()).subscribe({
-            next: response => {
+            next: (response: any) => {
               this.state.update(state => ({
                 ...state,
                 data: response.data,
@@ -91,7 +91,7 @@ function createServiceAndStoreFiles(basePath, name) {
       
           effect(() => {
             if (this.state().status === 'success') {
-              this.${storeNameLowerCase}.saveData(this.data());
+              this.${toCamelCase(name)}Store.saveData(this.data());
             }
           });
         }
@@ -100,7 +100,7 @@ function createServiceAndStoreFiles(basePath, name) {
 
   const storeContent = `
     import { inject, Injectable, InjectionToken, PLATFORM_ID } from '@angular/core';
-    import { of } from 'rxjs';
+    import { Observable, of } from 'rxjs';
     
     export const LOCAL_STORAGE = new InjectionToken<Storage>('window local storage object', {
       providedIn: 'root',
@@ -112,12 +112,12 @@ function createServiceAndStoreFiles(basePath, name) {
     @Injectable({
       providedIn: 'root',
     })
-    export class ${storeNameUpperCase} {
+    export class ${toPascalCase(name)}Store {
       storage = inject(LOCAL_STORAGE);
     
       loadData(): Observable<any[]> {
-        const data = this.storage.getItem('data');
-        return of(data ? (JSON.parse(data) as data[]) : []);
+        const data = this.storage.getItem('${toCamelCase(name)}');
+        return of(data ? (JSON.parse(data) as any[]) : []);
       }
     
       saveData(data: any[]): void {
@@ -127,49 +127,48 @@ function createServiceAndStoreFiles(basePath, name) {
   `;
 
   fs.writeFileSync(
-    path.join(basePath, "data", `${name.toLowerCase()}.service.ts`),
+    path.join(basePath, "data", `${toKebabCase(name)}.service.ts`),
     serviceContent,
   );
   fs.writeFileSync(
-    path.join(basePath, "data", `${name.toLowerCase()}.store.ts`),
+    path.join(basePath, "data", `${toKebabCase(name)}.store.ts`),
     storeContent,
   );
 }
 
 function createComponentFiles(basePath, name) {
   createDirectories(basePath, ["feature"]);
-  const serviceNameUpperCase = `${name.charAt(0).toUpperCase() + name.slice(1)}Service`;
-  const serviceNameLowerCase = `${name.charAt(0) + name.slice(1)}Service`;
   const componentTemplate = `<p>${name} works!</p>`;
-  const componentName = `
-    ${name.charAt(0).toUpperCase() + name.slice(1)}Component
-  `;
   const componentContent = `
-    import { Component } from '@angular/core';
+    import { Component, inject } from '@angular/core';
+    import { ${toPascalCase(name)}Service } from '../data/${toKebabCase(
+      name,
+    )}.service';
 
     @Component({
-      selector: 'app-${name.toLowerCase()}',
+      selector: 'app-${toKebabCase(name)}',
       standalone: true,
       template: \`${componentTemplate}\`,
     })
-    export class ${componentName} {
-      private readonly ${serviceNameLowerCase}: ${serviceNameUpperCase} = inject(${serviceNameUpperCase});
-}
+    export class ${toPascalCase(name)}Component {
+      private readonly ${toCamelCase(name)}Service: ${toPascalCase(
+        name,
+      )}Service = inject(${toPascalCase(name)}Service);
+    }
   `;
 
   fs.writeFileSync(
-    path.join(basePath, "feature", `${name.toLowerCase()}.component.ts`),
+    path.join(basePath, "feature", `${toKebabCase(name)}.component.ts`),
     componentContent,
   );
 }
 
-function createRoutesFiles(name, basePath) {
-  const routesNameLowerCase = `${name.charAt(0).toUpperCase() + name.slice(1)}Routes`;
-
+function createRoutesFiles(basePath, name) {
+  const routesPath = path.join(basePath, `${toKebabCase(name)}.routes.ts`);
   const componentContent = `
     import { Routes } from '@angular/router';
 
-    export const ${routesNameLowerCase}: Routes = [
+    export const ${toScreamingSnakeCase(name)}Routes: Routes = [
     /* NOTE: Add your routes here
       {
         path: '/',
@@ -179,10 +178,7 @@ function createRoutesFiles(name, basePath) {
     ];
   `;
 
-  fs.writeFileSync(
-      path.join(basePath, "feature", `${name.toLowerCase()}.routes.ts`),
-      componentContent,
-  );
+  fs.writeFileSync(routesPath, componentContent, "utf8");
 }
 
 function createStructure(name, basePath, isNested, childName = null) {
@@ -202,12 +198,12 @@ function createStructure(name, basePath, isNested, childName = null) {
     createDirectories(childBasePath, ["data", "ui", "feature"]);
     createComponentFiles(childBasePath, childName);
     createServiceAndStoreFiles(childBasePath, childName);
-    createRoutesFiles(childBasePath, childName);
+    createRoutesFiles(basePath, name);
   }
 }
 
-rl.question("Name the folder & feature: ", (parentName) => {
-  rl.question("Is it a nested component? (y/n): ", (nestedAnswer) => {
+rl.question("Name feature (camelCase): ", (parentName) => {
+  rl.question("Will contain more then one view? (y/n): ", (nestedAnswer) => {
     const isNested = nestedAnswer.trim().toLowerCase() === "y";
     const basePath = path.join("./src/app", parentName);
 
@@ -226,3 +222,24 @@ rl.question("Name the folder & feature: ", (parentName) => {
     }
   });
 });
+
+function toCamelCase(str) {
+  return str.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
+}
+
+function toPascalCase(str) {
+  const camel = toCamelCase(str);
+  return camel.charAt(0).toUpperCase() + camel.slice(1);
+}
+
+function toKebabCase(str) {
+  return str.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase();
+}
+
+function toScreamingSnakeCase(str) {
+  return str
+    .replace(/\s+/g, "_")
+    .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
+    .replace(/[^a-zA-Z0-9_]/g, "")
+    .toUpperCase();
+}
