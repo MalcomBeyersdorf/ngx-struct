@@ -22,10 +22,10 @@ function createServiceAndStoreFiles(basePath, name) {
 
   const serviceContent = `
     // Import statements etc.
-    import { retry, startWith, Subject, switchMap, of } from 'rxjs';
+    import { startWith, Subject, switchMap, of } from 'rxjs';
     import { computed, effect, inject, Injectable, signal } from '@angular/core';
     import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-    import { ${toPascalCase(name)}Store} from './${toKebabCase(name)}.store';
+    import { ${toPascalCase(name)}Store } from './${toKebabCase(name)}.store';
     
     @Injectable({
       providedIn: 'root',
@@ -170,28 +170,37 @@ function createRoutesFiles(basePath, name, childName) {
   if (fs.existsSync(routesPath)) {
     let data = fs.readFileSync(routesPath, "utf8");
 
+    const newImport = `import { ${toPascalCase(childName)} } from './${toKebabCase(childName)}/feature/${toKebabCase(childName)}.component';\n`;
     const newRoute = `{
       path: '${toKebabCase(childName)}',
-      component: ${toPascalCase(childName)},
+      component: ${toPascalCase(childName)}Component,
     },`;
 
-    const position = data.lastIndexOf("];");
+    const importPosition =
+      data.lastIndexOf("import") +
+      data.substring(data.lastIndexOf("import")).indexOf(";\n") +
+      2;
+    const updatedImports =
+      data.substring(0, importPosition) +
+      newImport +
+      data.substring(importPosition);
+
+    const position = updatedImports.lastIndexOf("];");
     if (position !== -1) {
       const updatedData =
-        data.substring(0, position) +
+        updatedImports.substring(0, position) +
         newRoute +
         "\n  " +
-        data.substring(position);
+        updatedImports.substring(position);
+
       fs.writeFileSync(routesPath, updatedData, "utf8");
     } else {
-      console.error(
-        "No se encontró el arreglo de rutas en el archivo existente.",
-      );
+      console.error(`Error finding the ${toKebabCase(name)}.routes.ts file`);
     }
   } else {
     const componentContent = `
       import { Routes } from '@angular/router';
-      import { ${toPascalCase(childName)}} from './${toKebabCase(childName)}/feature/${toKebabCase(childName)}.component';
+      import { ${toPascalCase(childName)} } from './${toKebabCase(childName)}/feature/${toKebabCase(childName)}.component';
 
       export const ${toScreamingSnakeCase(name)}_ROUTES: Routes = [
         {
@@ -212,10 +221,11 @@ function createStructure(name, basePath, isNested, childName = null) {
     createComponentFiles(childBasePath, childName);
     createServiceAndStoreFiles(childBasePath, childName);
     createRoutesFiles(basePath, name, childName);
+  } else {
+    createDirectories(basePath, ["data", "ui", "feature"]);
+    createServiceAndStoreFiles(basePath, name);
+    createComponentFiles(basePath, name);
   }
-  createDirectories(basePath, ["data", "ui", "feature"]);
-  createServiceAndStoreFiles(basePath, name);
-  createComponentFiles(basePath, name);
 }
 
 rl.question("Name feature (camelCase): ", (parentName) => {
