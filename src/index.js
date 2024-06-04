@@ -68,11 +68,13 @@ function createServiceAndStoreFiles(basePath, name) {
         constructor() {
           this.dataLoaded$.pipe(takeUntilDestroyed()).subscribe({
             next: (response: any) => {
+            /*
               this.state.update(state => ({
                 ...state,
                 data: response.data,
                 status: 'success',
               }));
+            */
             },
             error: error => this.state.update(state => ({ ...state, error, status: 'error' })),
           });
@@ -163,52 +165,66 @@ function createComponentFiles(basePath, name) {
   );
 }
 
-function createRoutesFiles(basePath, name) {
+function createRoutesFiles(basePath, name, childName) {
   const routesPath = path.join(basePath, `${toKebabCase(name)}.routes.ts`);
-  const componentContent = `
-    import { Routes } from '@angular/router';
+  if (fs.existsSync(routesPath)) {
+    let data = fs.readFileSync(routesPath, "utf8");
 
-    export const ${toScreamingSnakeCase(name)}Routes: Routes = [
-    /* NOTE: Add your routes here
-      {
-        path: '/',
-        component: SomeComponent,
-      },
-      */
-    ];
-  `;
+    const newRoute = `{
+      path: '${toKebabCase(childName)}',
+      component: ${toPascalCase(childName)},
+    },`;
 
-  fs.writeFileSync(routesPath, componentContent, "utf8");
+    const position = data.lastIndexOf("];");
+    if (position !== -1) {
+      const updatedData =
+        data.substring(0, position) +
+        newRoute +
+        "\n  " +
+        data.substring(position);
+      fs.writeFileSync(routesPath, updatedData, "utf8");
+    } else {
+      console.error(
+        "No se encontró el arreglo de rutas en el archivo existente.",
+      );
+    }
+  } else {
+    const componentContent = `
+      import { Routes } from '@angular/router';
+      import { ${toPascalCase(childName)}} from './${toKebabCase(childName)}/feature/${toKebabCase(childName)}.component';
+
+      export const ${toScreamingSnakeCase(name)}_ROUTES: Routes = [
+        {
+          path: '',
+          component: ${toPascalCase(childName)},
+        },
+      ];
+    `;
+
+    fs.writeFileSync(routesPath, componentContent, "utf8");
+  }
 }
 
 function createStructure(name, basePath, isNested, childName = null) {
-  const folders = ["data", "ui"];
-  if (!isNested) {
-    folders.push("feature");
-  }
-
-  createDirectories(basePath, folders);
-  createServiceAndStoreFiles(basePath, name);
-  if (!isNested) {
-    createComponentFiles(basePath, name);
-  }
-
-  if (isNested && childName) {
-    const childBasePath = path.join(basePath, "feature", childName);
+  if (isNested) {
+    const childBasePath = path.join(basePath, childName);
     createDirectories(childBasePath, ["data", "ui", "feature"]);
     createComponentFiles(childBasePath, childName);
     createServiceAndStoreFiles(childBasePath, childName);
-    createRoutesFiles(basePath, name);
+    createRoutesFiles(basePath, name, childName);
   }
+  createDirectories(basePath, ["data", "ui", "feature"]);
+  createServiceAndStoreFiles(basePath, name);
+  createComponentFiles(basePath, name);
 }
 
 rl.question("Name feature (camelCase): ", (parentName) => {
-  rl.question("Will contain more then one view? (y/n): ", (nestedAnswer) => {
+  rl.question("Multiple routes? (y/n): ", (nestedAnswer) => {
     const isNested = nestedAnswer.trim().toLowerCase() === "y";
     const basePath = path.join("./src/app", parentName);
 
     if (isNested) {
-      rl.question("Name of the child component: ", (childName) => {
+      rl.question("Name feature/route: ", (childName) => {
         createStructure(parentName, basePath, isNested, childName);
         console.log(
           `Structure for '${parentName}' with nested '${childName}' created successfully.`,

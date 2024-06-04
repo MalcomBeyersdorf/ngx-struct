@@ -1,6 +1,6 @@
 {
   "name": "ngx-struct",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "A CLI tool for quickly scaffolding Angular project structures, including components, services, and stores.",
   "main": "index.js",
   "bin": {
@@ -28,4 +28,3 @@
   },
   "homepage": "https://github.com/MalcomBeyersdorf/ngx-struct#readme"
 }
-
