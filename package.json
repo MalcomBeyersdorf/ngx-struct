@@ -1,6 +1,6 @@
 {
   "name": "ngx-struct",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "A CLI tool for quickly scaffolding Angular project structures, including components, services, and stores.",
   "main": "index.js",
   "bin": {
