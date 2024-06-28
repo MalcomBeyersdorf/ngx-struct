@@ -18,7 +18,7 @@ function createDirectories(basePath, folders) {
 }
 
 function createServiceAndStoreFiles(basePath, name) {
-  createDirectories(basePath, ["data"]);
+  createDirectories(basePath, ["data-access"]);
 
   const serviceContent = `
     // Import statements etc.
@@ -36,15 +36,15 @@ function createServiceAndStoreFiles(basePath, name) {
           name,
         )}Store = inject(${toPascalCase(name)}Store);
         
-        private state = signal<any>({
+        private $state = signal<any>({
           data: [],
           status: 'loading',
           error: null,
         });
         
-        data = computed(() => this.state().data);
-        status = computed(() => this.state().status);
-        error = computed(() => this.state().error);
+        $data = computed(() => this.$state().data);
+        $status = computed(() => this.$state().status);
+        $error = computed(() => this.$state().error);
 
         retry$ = new Subject<void>();
         private dataLoaded$ = this.retry$.pipe(
@@ -55,7 +55,7 @@ function createServiceAndStoreFiles(basePath, name) {
             this.apiService.get().pipe(
               retry({
                 delay: error => {
-                  this.state.update(state => ({ ...state, error, status: 'error' }));
+                  this.$state.update(state => ({ ...state, error, status: 'error' }));
                   return this.retry$;
                 },
               }),
@@ -63,23 +63,23 @@ function createServiceAndStoreFiles(basePath, name) {
             */
           ),
         );
-        action = new Subject<any>();
+        action$ = new Subject<any>();
         
         constructor() {
           this.dataLoaded$.pipe(takeUntilDestroyed()).subscribe({
             next: (response: any) => {
             /*
-              this.state.update(state => ({
+              this.$state.update(state => ({
                 ...state,
                 data: response.data,
                 status: 'success',
               }));
             */
             },
-            error: error => this.state.update(state => ({ ...state, error, status: 'error' })),
+            error: error => this.$state.update(state => ({ ...state, error, status: 'error' })),
           });
       
-          this.action.pipe(takeUntilDestroyed()).subscribe((subjectReceived: any) => {
+          this.action$.pipe(takeUntilDestroyed()).subscribe((subjectReceived: any) => {
             if (subjectReceived) {
               // do something
             } else {
@@ -89,11 +89,11 @@ function createServiceAndStoreFiles(basePath, name) {
       
           this.retry$
             .pipe(takeUntilDestroyed())
-            .subscribe(() => this.state.update(state => ({ ...state, status: 'loading' })));
+            .subscribe(() => this.$state.update(state => ({ ...state, status: 'loading' })));
       
           effect(() => {
-            if (this.state().status === 'success') {
-              this.${toCamelCase(name)}Store.saveData(this.data());
+            if (this.$state().status === 'success') {
+              this.${toCamelCase(name)}Store.saveData(this.$data());
             }
           });
         }
@@ -123,37 +123,36 @@ function createServiceAndStoreFiles(basePath, name) {
       }
     
       saveData(data: any[]): void {
-        this.storage.setItem('data', JSON.stringify(data));
+        this.storage.setItem('${toCamelCase(name)}', JSON.stringify(data));
       }
     }
   `;
 
   fs.writeFileSync(
-    path.join(basePath, "data", `${toKebabCase(name)}.service.ts`),
+    path.join(basePath, "data-access", `${toKebabCase(name)}.service.ts`),
     serviceContent,
   );
   fs.writeFileSync(
-    path.join(basePath, "data", `${toKebabCase(name)}.store.ts`),
+    path.join(basePath, "data-access", `${toKebabCase(name)}.store.ts`),
     storeContent,
   );
 }
 
 function createComponentFiles(basePath, name) {
   createDirectories(basePath, ["feature"]);
-  const componentTemplate = `<p>${name} works!</p>`;
   const componentContent = `
     import { Component, inject } from '@angular/core';
-    import { ${toPascalCase(name)}Service } from '../data/${toKebabCase(
+    import { ${toPascalCase(name)}Service } from '../data-access/${toKebabCase(
       name,
     )}.service';
 
     @Component({
       selector: 'app-${toKebabCase(name)}',
       standalone: true,
-      template: \`${componentTemplate}\`,
+      templateUrl: './${toKebabCase(name)}.component.html',
     })
     export class ${toPascalCase(name)}Component {
-      private readonly ${toCamelCase(name)}Service: ${toPascalCase(
+      private readonly service: ${toPascalCase(
         name,
       )}Service = inject(${toPascalCase(name)}Service);
     }
@@ -161,6 +160,16 @@ function createComponentFiles(basePath, name) {
 
   fs.writeFileSync(
     path.join(basePath, "feature", `${toKebabCase(name)}.component.ts`),
+    componentContent,
+  );
+}
+
+function createTemplateFiles(basePath, name) {
+  createDirectories(basePath, ["feature"]);
+  const componentContent = `<p>${name} works!</p>`;
+
+  fs.writeFileSync(
+    path.join(basePath, "feature", `${toKebabCase(name)}.component.html`),
     componentContent,
   );
 }
@@ -217,14 +226,16 @@ function createRoutesFiles(basePath, name, childName) {
 function createStructure(name, basePath, isNested, childName = null) {
   if (isNested) {
     const childBasePath = path.join(basePath, childName);
-    createDirectories(childBasePath, ["data", "ui", "feature"]);
+    createDirectories(childBasePath, ["data-access", "ui", "feature"]);
     createComponentFiles(childBasePath, childName);
+    createTemplateFiles(childBasePath, childName);
     createServiceAndStoreFiles(childBasePath, childName);
     createRoutesFiles(basePath, name, childName);
   } else {
-    createDirectories(basePath, ["data", "ui", "feature"]);
+    createDirectories(basePath, ["data-access", "ui", "feature"]);
     createServiceAndStoreFiles(basePath, name);
     createComponentFiles(basePath, name);
+    createTemplateFiles(basePath, name);
   }
 }
 
