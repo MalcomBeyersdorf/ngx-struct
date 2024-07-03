@@ -56,7 +56,7 @@ For nested features, the script additionally creates a `feature/` directory with
 - `feature/`: Includes the Smart component files for the nested feature, mirroring the base structure.
 - `ui/`: Dummy components.
 
-![alt](./assets/dependencies.png)
+![alt](./assets/dependencies.d.png)
 
 ### Data Diagram
 
@@ -70,15 +70,15 @@ Each subscription listens to its respective source$ and updates the private stat
 - `state`: Private states related to the feature.
 - `selectors`: They offer a way to derive data from the private states, ensuring the UI components get the latest updated values.
 
-![alt](./assets/data-flow.png)
+![alt](./assets/data-flow.d.png)
 
 > The idea behind the connection between rxjs and signals is to exploit the potential of both tools.
 
-![alt](./assets/rxjs-signals.png)
+![alt](./assets/rxjs-signals.d.png)
 
 > The final result should be something like this:
 
-![alt](./assets/application-logic.png)
+![alt](./assets/application-logic.d.png)
 
 ### Example Structure
 
